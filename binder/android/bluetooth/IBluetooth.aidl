@@ -138,6 +138,7 @@ interface IBluetooth
     oneway void requestActivityInfo(in ResultReceiver result);
 
     void onLeServiceUp();
+    void updateQuietModeStatus(boolean quietMode);
     void onBrEdrDown();
 
     boolean connectAllEnabledProfiles(in BluetoothDevice device);
