@@ -1405,18 +1405,13 @@ static void btif_dm_search_services_evt(uint16_t event, char* p_param) {
 
       BTIF_TRACE_DEBUG("%s:(result=0x%x, services 0x%x)", __func__,
                        p_data->disc_res.result, p_data->disc_res.services);
-      if (p_data->disc_res.result != BTA_SUCCESS &&
-          pairing_cb.state == BT_BOND_STATE_BONDED &&
-          pairing_cb.sdp_attempts < BTIF_DM_MAX_SDP_ATTEMPTS_AFTER_PAIRING) {
-        if (pairing_cb.sdp_attempts) {
-          BTIF_TRACE_WARNING("%s: SDP failed after bonding re-attempting",
-                             __func__);
-          pairing_cb.sdp_attempts++;
-          btif_dm_get_remote_services(bd_addr);
-        } else {
-          BTIF_TRACE_WARNING("%s: SDP triggered by someone failed when bonding",
-                             __func__);
-        }
+      if ((p_data->disc_res.result != BTA_SUCCESS) &&
+          (pairing_cb.state == BT_BOND_STATE_BONDED) &&
+          (pairing_cb.sdp_attempts < BTIF_DM_MAX_SDP_ATTEMPTS_AFTER_PAIRING)) {
+        BTIF_TRACE_WARNING("%s:SDP failed after bonding re-attempting",
+                           __func__);
+        pairing_cb.sdp_attempts++;
+        btif_dm_get_remote_services(bd_addr);
         return;
       }
       prop.type = BT_PROPERTY_UUIDS;
@@ -2862,7 +2857,7 @@ static void btif_dm_ble_auth_cmpl_evt(tBTA_DM_AUTH_CMPL* p_auth_cmpl) {
       btif_storage_remove_bonded_device(&bdaddr);
       state = BT_BOND_STATE_NONE;
     } else {
-      btif_dm_save_ble_bonding_keys();
+      btif_dm_save_ble_bonding_keys(bdaddr);
       BTA_GATTC_Refresh(bd_addr);
       btif_dm_get_remote_services_by_transport(&bd_addr, GATT_TRANSPORT_LE);
     }
@@ -2935,10 +2930,8 @@ void btif_dm_get_ble_local_keys(tBTA_DM_BLE_LOCAL_KEY_MASK* p_key_mask,
   BTIF_TRACE_DEBUG("%s  *p_key_mask=0x%02x", __func__, *p_key_mask);
 }
 
-void btif_dm_save_ble_bonding_keys(void) {
+void btif_dm_save_ble_bonding_keys(RawAddress& bd_addr) {
   BTIF_TRACE_DEBUG("%s", __func__);
-
-  RawAddress bd_addr = pairing_cb.bd_addr;
 
   if (pairing_cb.ble.is_penc_key_rcvd) {
     btif_storage_add_ble_bonding_key(
